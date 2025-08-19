@@ -39,7 +39,7 @@ The output will be a C function which implements your S-box.
 
 For details on the tool, please read the article.
 
-In case of need, please contact Marie Bolzer <marie.bolzer@loria.fr> and Sébastien Duval <sebastien.duval@loria.fr>.
+In case of need, please contact Marie Bolzer <marie.bolzer@univ-lorraine.fr> and Sébastien Duval <sebastien.duval@loria.fr>.
 
 ## Roadmap
 In the future, we plan to make the tool work on more than quadratic S-boxes.
