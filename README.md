@@ -26,12 +26,13 @@ Most computers should be able to handle up to 7 bits, but only dedicated machine
 
 Then, launch the program on your given S-box using a command of the following type:
 
-./implem_{YOUR_COMPUTER_NAME} --solmax 3 --andmax 4 --lut 0,1,4,5,3,2,7,6,12,13,8,9,15,14,11,10 --timemax 10
+./implem_{YOUR_COMPUTER_NAME} -s 3 -a 4 -l 0,1,4,5,3,2,7,6,12,13,8,9,15,14,11,10 -t 10
 
-where --solmax 3 asks the tool for 3 implementation solutions,
-where --andmax 4 tells the tool to cut short if the implementation costs more than 4 AND gates,
-where --lut 0,1,4,5,3,2,7,6,12,13,8,9,15,14,11,10 specifies your S-box (here a 4-bit S-box) in Look-up-Table form,
-where --timemax 10 will cut the program after 10 minutes.
+where -s 3 asks the tool for 3 implementation solutions,
+where -a 4 tells the tool to cut short if the implementation costs more than 4 AND gates,
+where -l 0,1,4,5,3,2,7,6,12,13,8,9,15,14,11,10 specifies your S-box (here a 4-bit S-box) in Look-up-Table form,
+where -t 10 will cut the program after 10 minutes.
+You also can specify -p 0 if you do not want to use the precomputation files. By default, they are used.
 
 The output will be a C function which implements your S-box.
 
