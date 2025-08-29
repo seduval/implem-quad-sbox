@@ -682,6 +682,24 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
     set<poly> op_selec_init;
     vector<poly> lignes_m_init = Y;
 
+    bool is_fully_lin = true;
+    for (uint32_t i=0; i<Y.size(); i++){
+        if (Y[i] != 0){
+            is_fully_lin = false;
+        }
+    }
+
+    if (is_fully_lin){
+        implem_non_lin imp_null;
+        set<poly> set_null;
+        indexx i_null;
+        imp_null.op = set_null;
+        imp_null.i = i_null;
+        vect_implem.push_back(imp_null);
+        stop = 1;
+        cout<<"The s-box is fully linear, no non-linear part needed"<<endl;
+    }
+
     /* STEP 1 :  */
     
     cout<<"Begin step 1"<<endl;
@@ -2103,7 +2121,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 }
                             }
                         }
-                        cout<<"Next triplet for thread "<< omp_get_thread_num()<<endl;
+                        //cout<<"Next triplet for thread "<< omp_get_thread_num()<<endl;
                     }
                 }
                 if (vect_implem.empty() == 1)   {
@@ -2444,7 +2462,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 }
                             }
                         }
-                        cout<<"Next quadruplet for thread "<< omp_get_thread_num()<<endl;
+                        //cout<<"Next quadruplet for thread "<< omp_get_thread_num()<<endl;
                     }
                 }
                 if (vect_implem.empty() == 1)   {
@@ -2465,9 +2483,9 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
         for (uint32_t i=0; i<vect_implem.size(); i++)   {
             map<uint32_t,vector<poly>> implem;
             implem = set_to_implem (vect_implem[i].op, Y, vect_implem[i].i );
-            if (implem.size() != Y.size())  {
+            /*if (implem.size() != Y.size())  {
                 cout<<"Error in recovery part : size of implem = "<<implem.size()<<endl;
-            }
+            }*/
             #pragma omp critical 
             {
                 res.push_back(implem);

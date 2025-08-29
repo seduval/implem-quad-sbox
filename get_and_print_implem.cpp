@@ -158,9 +158,9 @@ void print_implem(vector<vector<poly>> * Mat_op, uint32_t size, vector<poly> Yno
                     if ((hammingWeight(((*it_lin).second).first)) == 1)  {
                         print_monom((*it_lin).second.first,size);
                     }
-                    else {
+                    /*else {
                         cerr<<"Error in map_index : "<<endl;
-                    }
+                    }*/
                 }
                 cout<<" & ";
                 j = (*map_index).find((*it_lin).second.second);
@@ -171,9 +171,9 @@ void print_implem(vector<vector<poly>> * Mat_op, uint32_t size, vector<poly> Yno
                     if ((hammingWeight(((*it_lin).second).second)) == 1)  {
                         print_monom((*it_lin).second.second,size);
                     }
-                    else {
+                    /*else {
                         cerr<<"Error in map_index : "<<endl;
-                    }
+                    }*/
                 }
                 cout<<")";
                 uint32_t a = print_bit_lin_sup((*it_lin).second.first, (*it_lin).second.second, size);
@@ -223,6 +223,23 @@ void print_implem(vector<vector<poly>> * Mat_op, uint32_t size, vector<poly> Yno
         }
         else {
             cout<<"Error in map_index_bits_de_sortie"<<endl;
+        }
+    }
+
+    for (uint32_t i=0; i<Ylin.size(); i++){
+        if (Ynon_lin[i] == 0){
+            if (Ylin[i] != 0){
+                cout<<"\ty["<<i<<"] = ";
+                auto l = (*map_index).find(Ylin[i]);
+                if (l != (*map_index).end())   {
+                    cout<<"l_"<<(*l).second;
+                    cout<<";"<<endl;
+                }
+                else {
+                    print_monom(Ylin[i], size);
+                    cout<<";"<<endl;
+                }
+            }
         }
     }
 
