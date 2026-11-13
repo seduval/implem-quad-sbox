@@ -158,9 +158,9 @@ void print_implem(vector<vector<poly>> * Mat_op, uint32_t size, vector<poly> Yno
                     if ((hammingWeight(((*it_lin).second).first)) == 1)  {
                         print_monom((*it_lin).second.first,size);
                     }
-                    /*else {
+                    else {
                         cerr<<"Error in map_index : "<<endl;
-                    }*/
+                    }
                 }
                 cout<<" & ";
                 j = (*map_index).find((*it_lin).second.second);
@@ -171,9 +171,9 @@ void print_implem(vector<vector<poly>> * Mat_op, uint32_t size, vector<poly> Yno
                     if ((hammingWeight(((*it_lin).second).second)) == 1)  {
                         print_monom((*it_lin).second.second,size);
                     }
-                    /*else {
+                    else {
                         cerr<<"Error in map_index : "<<endl;
-                    }*/
+                    }
                 }
                 cout<<")";
                 uint32_t a = print_bit_lin_sup((*it_lin).second.first, (*it_lin).second.second, size);

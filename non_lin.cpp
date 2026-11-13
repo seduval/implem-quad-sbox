@@ -780,7 +780,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                         if (nb_sol >= nb_sol_wanted) {
                                             #pragma omp atomic write
                                             stop = 1;
-                                            cout<<"Number of wanted solutions reached"<<endl;
+                                            cout<<"Number of wanted solutions reached (" << nb_sol << "/" << nb_sol_wanted << ")" <<endl;
                                         }
                                     }
                                 }
@@ -2474,6 +2474,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
             }
         }
     }
+
     cout<<"Begin recovery part"<<endl;
     vect_implem = remove_duplicates_impl(vect_implem);
     vector<map<uint32_t,vector<poly>>> res;
@@ -2492,6 +2493,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
             }
         }
     }
+
     cout<<"End of the non-linear part" <<endl;
     auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     cout << "Time is " << ctime(&now) << endl;

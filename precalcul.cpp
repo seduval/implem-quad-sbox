@@ -86,6 +86,9 @@ map<poly,pair<poly,poly>> create_map_lin (vector<vector<poly>> Mat_op, set<poly>
 
 uint32_t nb_bits_to_size_set (uint32_t size){
     uint32_t res;
+    if (size == 4)  {
+        res = 35;
+    }
     if (size == 5)  {
         res = 155;
     }
@@ -109,6 +112,9 @@ uint32_t nb_bits_to_size_set (uint32_t size){
 
 uint32_t nb_bits_to_size_map_xor (uint32_t size){
     uint32_t res;
+    if (size == 4)  {
+        res = 28;
+    }
     if (size == 5)  {
         res = 868;
     }
@@ -215,7 +221,6 @@ void parse_file_and_create_map_lin(uint32_t size, pair_lin map_lin []) {
             i++;
             pos = line.find("{", endPos);
         }
-        
     }
 
     file.close();
@@ -314,7 +319,7 @@ map<poly,pair<poly,poly>> create_map_lin_tab (uint32_t size, pair_lin map_lin []
             mat_op[(*it)].second = map_lin[indice].second[1];
         }
         else {
-            cerr<<"Error in create_map_lin_tab"<<endl;
+            cerr<<"Error in create_map_lin_tab of size " << size << endl;
         }
     }
     return mat_op;
