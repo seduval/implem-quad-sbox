@@ -44,7 +44,8 @@ vector<set<poly>> Test_xor (poly x/*!<Quadratic operation(poly) we want to imple
  uint32_t size_set/*!< Size of set_op as it is a static array*/,
  pair_xor map_xor[]/*!< Set of quadratic operations(poly) that are obtained by XORing two elements of set_op. Each of these operations is followed by the possible couples to obtain it.*/,
  uint32_t size_map_xor/*!< Size of map_xor as it is a static array*/, 
- uint32_t nb_op/*!< Number of AND gate we add*/);
+ uint32_t nb_op/*!< Number of AND gate we add*/,
+ uint8_t reduced_search_space/*!<To precise if we want an exhaustive search or not*/);
 
 /*!
 * Compute from Op_selec which quadratic operations will produce each output bit and save in ind the order to proceed the quadratic operations.
@@ -61,6 +62,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[]/*!< Set of quadr
  vector<poly> Y/*!<Each element of this vector represents an output bit of the s-box we want to implements*/, 
  uint8_t nb_and_max/*!<Maximum AND gates wanted on the final implementation*/, 
  int nb_sol_wanted/*!<Number of wanted solutions*/, 
- uint64_t time_max/*!<Bound on the running time in minutes*/);
+ uint64_t time_max/*!<Bound on the running time in minutes*/,
+ uint8_t reduced_search_space/*!<To precise if we want an exhaustive search or not*/);
 
 #endif

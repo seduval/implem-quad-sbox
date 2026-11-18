@@ -494,11 +494,13 @@ vector<set<poly>> test_xor(poly x, vector<poly> op_selec, uint8_t a, poly set_op
     return sol;
 }
 
-vector<set<poly>> Test_xor (poly x, set<poly> op_selec, poly set_op [] , uint32_t size_set, pair_xor map_xor[], uint32_t size_map_xor, uint32_t nb_op)   {
+vector<set<poly>> Test_xor (poly x, set<poly> op_selec, poly set_op [] , uint32_t size_set, pair_xor map_xor[], uint32_t size_map_xor, uint32_t nb_op, uint8_t reduced_search_space)   {
     vector<poly> v_op_selec (op_selec.begin(),op_selec.end());
     vector<set<poly>> res;
     for (uint32_t i=0; i<nb_op +1; i++) {
         for (uint32_t j=0; j<op_selec.size() +1 && !stop ; j++) {
+            // if (debug) if (x==0b100000000010011 && op_selec.size()==4 && nb_op==4) if (i==2 && j==3) cout << "looking for the right thing in Text_xor" << endl;
+            // if (debug) if (x==0b100000000010011 && op_selec.size()==4 && nb_op==4) if (i==2) cout << "i=" << i << ", j=" << j << endl;
             vector<set<poly>> sol = test_xor(x, v_op_selec, j, set_op, size_set, map_xor, size_map_xor, i);
             //If the vector is not empty, return the possibles sets uptated.
             if (sol.empty() != 1) {
@@ -509,9 +511,12 @@ vector<set<poly>> Test_xor (poly x, set<poly> op_selec, poly set_op [] , uint32_
                     }
                     res.push_back(op_selec_mis_a_jour);
                 }
-                return res;
+                if (reduced_search_space == 1)
+                    return res;
             }
         }
+        if (res.empty() != 1)
+            return res;
     }
     return res;
 }
@@ -670,7 +675,7 @@ vector<implem_non_lin> remove_duplicates_impl(vector<implem_non_lin> vect_implem
     return res;
 }
 
-vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_set, pair_xor map_xor [], uint32_t size_map_xor, vector<poly> Y, uint8_t nb_and_max, int nb_sol_wanted, uint64_t time_max)    {
+vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_set, pair_xor map_xor [], uint32_t size_map_xor, vector<poly> Y, uint8_t nb_and_max, int nb_sol_wanted, uint64_t time_max, uint8_t reduced_search_space)    {
     /* Si nb_sol_wanted = -1, on renvoit toutes les implem */
     auto begin = chrono::steady_clock::now();
     stop = 0;
@@ -729,6 +734,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                         if (time_spent.count() > time_max)  {
                             #pragma omp atomic write
                             stop = 1;
+                            cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                         }
 
                         if (stop_local) {
@@ -742,7 +748,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                         poly l1 = vect_perm[k][0]; //1ère ligne manquante
                         poly l2 = vect_perm[k][1]; //2ème ligne manquante
                         poly l3 = vect_perm[k][2]; //3ème ligne manquante
-                        vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                        vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
 
                         if (vect_op_selec2.empty() == 1)   {
                                 continue;
@@ -750,14 +756,14 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                         for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                             set<poly> op_selec2 = vect_op_selec2[l];
                             uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                            vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                            vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                             if (vect_op_selec3.empty() == 1)   {
                                     continue;    
                             }
                             for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                 set<poly> op_selec3 = vect_op_selec3[m];
                                 uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                 if (vect_op_selec4.empty() == 1)   {
                                     continue;
                                 }
@@ -816,7 +822,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                         poly l2 = vect_perm[k][1]; //2ème ligne manquante
                         poly l3 = vect_perm[k][2]; //3ème ligne manquante
                         poly l4 = vect_perm[k][3]; //4ème ligne manquante
-                        vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                        vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
 
                         if (vect_op_selec2.empty() == 1)   {
                             continue;
@@ -824,21 +830,21 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                         for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                             set<poly> op_selec2 = vect_op_selec2[l];
                             uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                            vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                            vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                             if (vect_op_selec3.empty() == 1)   {
                                 continue;    
                             }
                             for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                 set<poly> op_selec3 = vect_op_selec3[m];
                                 uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                 if (vect_op_selec4.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                     set<poly> op_selec4 = vect_op_selec4[n];
                                     uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                    vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                    vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                     if (vect_op_selec5.empty() == 1)   {
                                         continue;
                                     }
@@ -885,6 +891,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                         if (time_spent.count() > time_max)  {
                             #pragma omp atomic write
                             stop = 1;
+                            cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                         }
 
                         if (stop_local) {
@@ -900,7 +907,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                         poly l3 = vect_perm[k][2]; //3ème ligne manquante
                         poly l4 = vect_perm[k][3]; //4ème ligne manquante
                         poly l5 = vect_perm[k][4]; //5ème ligne manquante
-                        vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                        vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
 
                         if (vect_op_selec2.empty() == 1)   {
                             continue;
@@ -908,28 +915,28 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                         for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                             set<poly> op_selec2 = vect_op_selec2[l];
                             uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                            vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                            vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                             if (vect_op_selec3.empty() == 1)   {
                                 continue;    
                             }
                             for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                 set<poly> op_selec3 = vect_op_selec3[m];
                                 uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                 if (vect_op_selec4.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                     set<poly> op_selec4 = vect_op_selec4[n];
                                     uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                    vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                    vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                     if (vect_op_selec5.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t p=0; p<vect_op_selec5.size() && !stop; p++)    {
                                         set<poly> op_selec5 = vect_op_selec5[p];
                                         uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                        vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                        vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                         if (vect_op_selec5.empty() == 1)   {
                                             continue;
                                         }
@@ -1024,11 +1031,12 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
                                 poly l3 = vect_perm[k][2]; //3ème ligne manquante
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
 
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
@@ -1036,14 +1044,14 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;    
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
@@ -1084,12 +1092,13 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
                                 poly l3 = vect_perm[k][2]; //3ème ligne manquante
                                 poly l4 = vect_perm[k][3]; //4ème ligne manquante
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
 
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
@@ -1097,21 +1106,21 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;    
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
@@ -1156,6 +1165,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -1163,7 +1173,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 poly l4 = vect_perm[k][3]; //4ème ligne manquante
                                 poly l5 = vect_perm[k][4]; //5ème ligne manquante
 
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
 
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
@@ -1171,28 +1181,28 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;    
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
                                             for (uint32_t p=0; p<vect_op_selec5.size() && !stop; p++)    {
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
@@ -1237,6 +1247,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -1244,42 +1255,42 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 poly l4 = vect_perm[k][3]; //4ème ligne manquante
                                 poly l5 = vect_perm[k][4]; //5ème ligne manquante
                                 poly l6 = vect_perm[k][5]; //6ème ligne manquante
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
                                             for (uint32_t p=0; p<vect_op_selec5.size() && !stop; p++)    {
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
                                                 for (uint32_t q=0; q<vect_op_selec6.size() && !stop; q++)    {
                                                     set<poly> op_selec6 = vect_op_selec6[q];
                                                     uint8_t nb_op6 = nb_op_init - op_selec6.size();
-                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6);
+                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6, reduced_search_space);
                                                     if (vect_op_selec7.empty() == 1)   {
                                                         continue;
                                                     }
@@ -1340,6 +1351,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -1348,49 +1360,49 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 poly l5 = vect_perm[k][4]; //5ème ligne manquante
                                 poly l6 = vect_perm[k][5]; //6ème ligne manquante
                                 poly l7 = vect_perm[k][6]; //7ème ligne manquante
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }                                            
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
                                             for (uint32_t p=0; p<vect_op_selec5.size() && !stop; p++)    {
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
                                                 for (uint32_t q=0; q<vect_op_selec6.size() && !stop; q++)    {
                                                     set<poly> op_selec6 = vect_op_selec6[q];
                                                     uint8_t nb_op6 = nb_op_init - op_selec6.size();
-                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6);
+                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6, reduced_search_space);
                                                     if (vect_op_selec7.empty() == 1)   {
                                                         continue;
                                                     }
                                                     for (uint32_t r=0; r<vect_op_selec7.size() && !stop; r++)    {
                                                         set<poly> op_selec7 = vect_op_selec7[r];
                                                         uint8_t nb_op7 = nb_op_init - op_selec7.size();
-                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7);
+                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7, reduced_search_space);
                                                         if (vect_op_selec8.empty() == 1)   {
                                                              continue;
                                                         }
@@ -1446,6 +1458,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -1455,56 +1468,56 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 poly l6 = vect_perm[k][5]; //6ème ligne manquante
                                 poly l7 = vect_perm[k][6]; //7ème ligne manquante
                                 poly l8 = vect_perm[k][7]; //8ème ligne manquante
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }                                            
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
                                             for (uint32_t p=0; p<vect_op_selec5.size() && !stop; p++)    {
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
                                                 for (uint32_t q=0; q<vect_op_selec6.size() && !stop; q++)    {
                                                     set<poly> op_selec6 = vect_op_selec6[q];
                                                     uint8_t nb_op6 = nb_op_init - op_selec6.size();
-                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6);
+                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6, reduced_search_space);
                                                     if (vect_op_selec7.empty() == 1)   {
                                                         continue;
                                                     }
                                                     for (uint32_t r=0; r<vect_op_selec7.size() && !stop; r++)    {
                                                         set<poly> op_selec7 = vect_op_selec7[r];
                                                         uint8_t nb_op7 = nb_op_init - op_selec7.size();
-                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7);
+                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7, reduced_search_space);
                                                         if (vect_op_selec8.empty() == 1)   {
                                                              continue;
                                                         }
                                                         for (uint32_t s=0; s<vect_op_selec8.size() && !stop; s++)    {
                                                             set<poly> op_selec8 = vect_op_selec8[s];
                                                             uint8_t nb_op8 = nb_op_init - op_selec8.size();
-                                                            vector<set<poly>> vect_op_selec9 = Test_xor(l8, op_selec8, set_op, size_set, map_xor, size_map_xor, nb_op8);
+                                                            vector<set<poly>> vect_op_selec9 = Test_xor(l8, op_selec8, set_op, size_set, map_xor, size_map_xor, nb_op8, reduced_search_space);
                                                             if (vect_op_selec9.empty() == 1)   {
                                                                 continue;
                                                             }
@@ -1625,34 +1638,35 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante  
                                 poly l3 = vect_perm[k][2]; //3ème ligne manquante
                                 poly l4 = vect_perm[k][3]; //4ème ligne manquante
                                         
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
@@ -1695,7 +1709,8 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 auto time_spent = chrono::duration_cast<chrono::duration<double>>(Now - begin);
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
-                                        stop = 1;
+                                    stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -1703,35 +1718,35 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 poly l4 = vect_perm[k][3]; //4ème ligne manquante
                                 poly l5 = vect_perm[k][4]; //5ème ligne manquante
                                     
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {   
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
                                             for (uint32_t p=0; p<vect_op_selec5.size() && !stop; p++)    {
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec5.empty() == 1)   {
                                                     continue;
                                                 }
@@ -1776,6 +1791,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -1784,42 +1800,42 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 poly l5 = vect_perm[k][4]; //5ème ligne manquante
                                 poly l6 = vect_perm[k][5]; //6ème ligne manquante
                             
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
                                             for (uint32_t p=0; p<vect_op_selec5.size() && !stop; p++)    {
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
                                                 for (uint32_t q=0; q<vect_op_selec6.size() && !stop; q++)    {
                                                     set<poly> op_selec6 = vect_op_selec6[q];
                                                     uint8_t nb_op6 = nb_op_init - op_selec6.size();
-                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6);
+                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6, reduced_search_space);
                                                     if (vect_op_selec7.empty() == 1)   {
                                                         continue;
                                                     }
@@ -1888,29 +1904,30 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
@@ -1920,24 +1937,25 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                                 if (time_spent.count() > time_max)  {
                                                     #pragma omp atomic write
                                                     stop = 1;
+                                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                                 }
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
                                                 for (uint32_t q=0; q<vect_op_selec6.size() && !stop; q++)    {
                                                     set<poly> op_selec6 = vect_op_selec6[q];
                                                     uint8_t nb_op6 = nb_op_init - op_selec6.size();
-                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6);
+                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6, reduced_search_space);
                                                     if (vect_op_selec7.empty() == 1)   {
                                                         continue;
                                                     }
                                                     for (uint32_t r=0; r<vect_op_selec7.size() && !stop; r++)    {
                                                         set<poly> op_selec7 = vect_op_selec7[r];
                                                         uint8_t nb_op7 = nb_op_init - op_selec7.size();
-                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7);
+                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7, reduced_search_space);
                                                         if (vect_op_selec8.empty() == 1)   {
                                                             continue;
                                                         }
@@ -2000,6 +2018,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -2012,29 +2031,30 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
-                                    vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                    vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                     if (vect_op_selec2.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
@@ -2044,31 +2064,32 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                                 if (time_spent.count() > time_max)  {
                                                     #pragma omp atomic write
                                                     stop = 1;
+                                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                                 }
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
                                                 for (uint32_t q=0; q<vect_op_selec6.size() && !stop; q++)    {
                                                     set<poly> op_selec6 = vect_op_selec6[q];
                                                     uint8_t nb_op6 = nb_op_init - op_selec6.size();
-                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6);
+                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6, reduced_search_space);
                                                     if (vect_op_selec7.empty() == 1)   {
                                                         continue;
                                                     }
                                                     for (uint32_t r=0; r<vect_op_selec7.size() && !stop; r++)    {
                                                         set<poly> op_selec7 = vect_op_selec7[r];
                                                         uint8_t nb_op7 = nb_op_init - op_selec7.size();
-                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7);
+                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7, reduced_search_space);
                                                         if (vect_op_selec8.empty() == 1)   {
                                                             continue;
                                                         }
                                                         for (uint32_t s=0; s<vect_op_selec8.size() && !stop; s++)    {
                                                             set<poly> op_selec8 = vect_op_selec8[s];
                                                             uint8_t nb_op8 = nb_op_init - op_selec8.size();
-                                                            vector<set<poly>> vect_op_selec9 = Test_xor(l8, op_selec8, set_op, size_set, map_xor, size_map_xor, nb_op8);
+                                                            vector<set<poly>> vect_op_selec9 = Test_xor(l8, op_selec8, set_op, size_set, map_xor, size_map_xor, nb_op8, reduced_search_space);
                                                             if (vect_op_selec9.empty() == 1)   {
                                                                 continue;
                                                             }
@@ -2212,6 +2233,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -2223,29 +2245,30 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
-                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                 if (vect_op_selec2.empty() == 1)   {
                                     continue;
                                 }
                                 for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
@@ -2255,24 +2278,25 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                                 if (time_spent.count() > time_max)  {
                                                     #pragma omp atomic write
                                                     stop = 1;
+                                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                                 }
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
                                                 for (uint32_t q=0; q<vect_op_selec6.size() && !stop; q++)    {
                                                     set<poly> op_selec6 = vect_op_selec6[q];
                                                     uint8_t nb_op6 = nb_op_init - op_selec6.size();
-                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6);
+                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6, reduced_search_space);
                                                     if (vect_op_selec7.empty() == 1)   {
                                                         continue;
                                                     }
                                                     for (uint32_t r=0; r<vect_op_selec7.size() && !stop; r++)    {
                                                         set<poly> op_selec7 = vect_op_selec7[r];
                                                         uint8_t nb_op7 = nb_op_init - op_selec7.size();
-                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7);
+                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7, reduced_search_space);
                                                         if (vect_op_selec8.empty() == 1)   {
                                                             continue;
                                                         }
@@ -2341,6 +2365,7 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
                                 poly l1 = vect_perm[k][0]; //1ère ligne manquante
                                 poly l2 = vect_perm[k][1]; //2ème ligne manquante
@@ -2353,29 +2378,30 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                 if (time_spent.count() > time_max)  {
                                     #pragma omp atomic write
                                     stop = 1;
+                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                 }
-                                    vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op);
+                                    vector<set<poly>> vect_op_selec2 = Test_xor(l1, op_selec1, set_op, size_set, map_xor, size_map_xor, nb_op, reduced_search_space);
                                     if (vect_op_selec2.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t l=0; l<vect_op_selec2.size() && !stop; l++)    {
                                     set<poly> op_selec2 = vect_op_selec2[l];
                                     uint8_t nb_op2 = nb_op_init - op_selec2.size();
-                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2);
+                                    vector<set<poly>> vect_op_selec3 = Test_xor(l2, op_selec2, set_op, size_set, map_xor, size_map_xor, nb_op2, reduced_search_space);
                                     if (vect_op_selec3.empty() == 1)   {
                                         continue;
                                     }
                                     for (uint32_t m=0; m<vect_op_selec3.size() && !stop; m++)    {
                                         set<poly> op_selec3 = vect_op_selec3[m];
                                         uint8_t nb_op3 = nb_op_init - op_selec3.size();
-                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3);
+                                        vector<set<poly>> vect_op_selec4 = Test_xor(l3, op_selec3, set_op, size_set, map_xor, size_map_xor, nb_op3, reduced_search_space);
                                         if (vect_op_selec4.empty() == 1)   {
                                             continue;
                                         }
                                         for (uint32_t n=0; n<vect_op_selec4.size() && !stop; n++)    {
                                             set<poly> op_selec4 = vect_op_selec4[n];
                                             uint8_t nb_op4 = nb_op_init - op_selec4.size();
-                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4);
+                                            vector<set<poly>> vect_op_selec5 = Test_xor(l4, op_selec4, set_op, size_set, map_xor, size_map_xor, nb_op4, reduced_search_space);
                                             if (vect_op_selec5.empty() == 1)   {
                                                 continue;
                                             }
@@ -2385,31 +2411,32 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
                                                 if (time_spent.count() > time_max)  {
                                                     #pragma omp atomic write
                                                     stop = 1;
+                                                    cerr << "Timeout: time reached " << time_max << "seconds." << endl;
                                                 }
                                                 set<poly> op_selec5 = vect_op_selec5[p];
                                                 uint8_t nb_op5 = nb_op_init - op_selec5.size();
-                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5);
+                                                vector<set<poly>> vect_op_selec6 = Test_xor(l5, op_selec5, set_op, size_set, map_xor, size_map_xor, nb_op5, reduced_search_space);
                                                 if (vect_op_selec6.empty() == 1)   {
                                                     continue;
                                                 }
                                                 for (uint32_t q=0; q<vect_op_selec6.size() && !stop; q++)    {
                                                     set<poly> op_selec6 = vect_op_selec6[q];
                                                     uint8_t nb_op6 = nb_op_init - op_selec6.size();
-                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6);
+                                                    vector<set<poly>> vect_op_selec7 = Test_xor(l6, op_selec6, set_op, size_set, map_xor, size_map_xor, nb_op6, reduced_search_space);
                                                     if (vect_op_selec7.empty() == 1)   {
                                                         continue;
                                                     }
                                                     for (uint32_t r=0; r<vect_op_selec7.size() && !stop; r++)    {
                                                         set<poly> op_selec7 = vect_op_selec7[r];
                                                         uint8_t nb_op7 = nb_op_init - op_selec7.size();
-                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7);
+                                                        vector<set<poly>> vect_op_selec8 = Test_xor(l7, op_selec7, set_op, size_set, map_xor, size_map_xor, nb_op7, reduced_search_space);
                                                         if (vect_op_selec8.empty() == 1)   {
                                                             continue;
                                                         }
                                                         for (uint32_t s=0; s<vect_op_selec8.size() && !stop; s++)    {
                                                             set<poly> op_selec8 = vect_op_selec8[s];
                                                             uint8_t nb_op8 = nb_op_init - op_selec8.size();
-                                                            vector<set<poly>> vect_op_selec9 = Test_xor(l8, op_selec8, set_op, size_set, map_xor, size_map_xor, nb_op8);
+                                                            vector<set<poly>> vect_op_selec9 = Test_xor(l8, op_selec8, set_op, size_set, map_xor, size_map_xor, nb_op8, reduced_search_space);
                                                             if (vect_op_selec9.empty() == 1)   {
                                                                 continue;
                                                             }
@@ -2493,9 +2520,19 @@ vector<map<uint32_t,vector<poly>>> return_implem (poly set_op[], uint32_t size_s
             }
         }
     }
-
     cout<<"End of the non-linear part" <<endl;
+
+    auto Now = chrono::steady_clock::now();
+    auto time_spent = chrono::duration_cast<chrono::duration<double>>(Now - begin);
+
     auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     cout << "Time is " << ctime(&now) << endl;
+
+    if (time_spent.count() > time_max)  {
+        cout << "Run reached the timeout." << endl;
+    }
+    else {
+        cout << "Run did not reach the timeout." << endl;
+    }
     return res;
 }

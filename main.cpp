@@ -16,6 +16,7 @@ void print_help() {
     <<" The option ' --andmax' or '-a' allows you to choose a maximum for the number of AND gates wanted in the implementation"<<endl
     <<" The option '--solmax' or '-s' allows you to choose the number of different solutions wanted, by default the programm will try to find all of them"<<endl
     <<" The option '--precomputed_files' or '-p' allows you to not use the precomputed files, to do so give '0' "<<endl
+    <<" The option '--reduced_search_space' or '-r' allows for a smaller search space, but at the cost of not ensuring optimality. "<<endl
     <<" By default this option is used if all the solutions are not wanted, if you don't want it give 0"<<endl;
 }
 
@@ -32,6 +33,7 @@ int main(int argc, char **argv)  {
     uint32_t size_in = 0;
     uint32_t size_out = 0;
     uint8_t precomputed_files = 1; //Par défault, on utilise les fichiers de precalcul
+    uint8_t reduced_search_space = 0; // Default: exhaustive if possible.
 
     static struct option longopts[] = {
         {"cut_nuplet", required_argument, NULL, 'c'},
@@ -40,6 +42,7 @@ int main(int argc, char **argv)  {
         {"solmax", required_argument, NULL, 's'},
         {"andmax", required_argument, NULL, 'a'},
         {"timemax", required_argument, NULL, 't'},
+        {"reduced_search_space", required_argument, NULL, 'r'},
         {"help", no_argument, NULL, 'h'},
         { NULL, 0, NULL, 0 }
     };
@@ -48,7 +51,7 @@ int main(int argc, char **argv)  {
         exit(0);
     }
     int opt;
-    while ((opt = getopt_long(argc, argv, "l:s:a:t:p:h", longopts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "l:s:a:t:p:h:r", longopts, NULL)) != -1) {
         switch (opt) {
              case 'h': {
                 print_help();
@@ -86,6 +89,10 @@ int main(int argc, char **argv)  {
                 precomputed_files = atoi(optarg);
                 break;
             }
+            case 'r' : {
+                reduced_search_space = 1;
+                break;
+            }
             default:
                 cerr << "Unknown program argument " << opt << endl;
         }
@@ -96,12 +103,15 @@ int main(int argc, char **argv)  {
         exit(0);
     }
 
+    if (size_out >= 8)
+        reduced_search_space = 1;
+
     uint32_t lut [nb_elem];
     for (uint32_t i=0; i<nb_elem; i++)  {
         lut[i] = v_lut[i];
     }
 
-    lut_to_implems(lut, size_in, size_out, nb_sol, nb_and_max, time_max, precomputed_files);
+    lut_to_implems(lut, size_in, size_out, nb_sol, nb_and_max, time_max, precomputed_files, reduced_search_space);
    
     exit(0);
 }

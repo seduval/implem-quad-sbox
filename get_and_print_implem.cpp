@@ -253,7 +253,7 @@ void print_implem(vector<vector<poly>> * Mat_op, uint32_t size, vector<poly> Yno
     cout<<endl<<"Number of AND : "<<map_index_q.size() <<endl<<"Number of XOR : "<<nb_xor<<endl;
 }
 
-void lut_to_implems (uint32_t lut[], uint32_t size_in, uint32_t size_out, int nb_sol, uint32_t nb_and_max, uint64_t time_max, uint8_t precomputed_files)  {
+void lut_to_implems (uint32_t lut[], uint32_t size_in, uint32_t size_out, int nb_sol, uint32_t nb_and_max, uint64_t time_max, uint8_t precomputed_files, uint8_t reduced_search_space)  {
 
     cout<<"Begin pre-calculus "<<endl;
     time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -345,40 +345,41 @@ void lut_to_implems (uint32_t lut[], uint32_t size_in, uint32_t size_out, int nb
     
     vector<map<uint32_t,vector<poly>>> vect_implem;
     if (nb_and_max != 0)    {
-        vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max);
+        vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max, reduced_search_space);
     }
     else {
         if (size_in == 4)  {
             nb_and_max = 4;
-            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max);
+            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max, reduced_search_space);
         }
         if (size_in == 5)  {
             nb_and_max = 7;
-            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max);
+            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max, reduced_search_space);
         }
         if (size_in == 6)  {
             nb_and_max = 9;
-            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max);
+            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max, reduced_search_space);
         }
         if (size_in == 7)  {
             nb_and_max = 12;
-            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max);
+            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max, reduced_search_space);
         }
         if (size_in == 8)  {
             nb_and_max = 16;
-            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max);
+            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, nb_sol, time_max, reduced_search_space);
         }
         while (vect_implem.empty() != 1)    {
             cout<<"We can get an implementation using "<<nb_and_max<<" AND gates"<<endl;
             nb_and_max --;
             cout<<"Testing for "<<nb_and_max<<" AND gates"<<endl;
-            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, 1, time_max);
+            vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max, 1, time_max, reduced_search_space);
         }
-        vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max +1 ,nb_sol ,time_max);
+        vect_implem = return_implem(set_op, size_set, map_xor, size_map_xor, Y, nb_and_max +1 ,nb_sol ,time_max, reduced_search_space);
     }
     
     cout<<vect_implem.size()<<" implementations have been found"<<endl;
     cout<<endl;
+
     for (uint8_t i=0; i<vect_implem.size(); i++)  {
         print_implem(Mat_op, size_in, Y, Ylin, Yneg, vect_implem[i], precomputed_files);
     }
