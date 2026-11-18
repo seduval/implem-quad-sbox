@@ -43,7 +43,7 @@ In case of need, please contact Marie Bolzer and Sébastien Duval (e-mails in ar
 ## Roadmap
 A tool for S-boxes of degree larger than 2 is now also available at https://github.com/seduval/implem-sbox.
 It is limited to smaller S-boxes however.
-In the case of degree-2 S-boxes, this new tool is faster, can handle larger S-boxes, but gives slightly less optimal results.
+In the case of degree-2 S-boxes, this new tool is faster but gives slightly less optimal results.
 
 ## Contributing
 If you wish to contribute, please contact us to discuss ideas.
