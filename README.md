@@ -52,10 +52,7 @@ If you wish to contribute, please contact us to discuss ideas.
 A tool provided by Marie Bolzer and Sébastien Duval.
 
 ## Results
-Results of appyling the tool can be found in the article (https://doi.org/10.1109/TCSI.2025.3602151).
-
-### Updated results
-After a nice work by Totó Busnello who checked our results up to 6-bit functions via a SAT solver and found lower bounds for the number of required AND gates for some functions, he spotted a few typos that we detail below for clarity and found a better implementation than our 9-AND BL_ECCZ_1 in the paper with 8 AND. This allowed us to spot a bug in the tool that prevented us from exploring a (rarely but sometimes useful) part of the search space. The tool has been updated and now also finds an 8-AND, 35-XOR implementation for BL_ECCZ_1.
+After a nice work by Totó Busnello (see link below) who checked our results up to 6-bit functions via a SAT solver and found lower bounds for the number of required AND gates for some functions, he spotted a few typos that we detail below for clarity and found a better implementation than our 9-AND BL_ECCZ_1 in the paper with 8 AND. This allowed us to spot a bug in the tool that prevented us from exploring a (rarely but sometimes useful) part of the search space. The tool has been updated and now also finds an 8-AND, 35-XOR implementation for BL_ECCZ_1.
 
 Typos:
 - in Table IX of the paper, we write that the linearity of BL_ECCZ_11 is 16, but it is 32,
@@ -63,3 +60,4 @@ Typos:
 - the primitive polynomials used in the article do not always match the primitive polynomials used in the implementations in the Supplementary Material, in particular over 6 bits we actually used X⁶+X⁴+X³+X+1 and not X⁶+X⁴+X²+X+1 as was written in the paper.
 
 We thank Totó Busnello for checking our results and finding these discrepancies.
+His work can be found at L. A. Busnello, "Audit note on the 5- and 6-bit tables of Bolzer, Duval and Minier", Zenodo, 2026, https://doi:10.5281/zenodo.24345038.
